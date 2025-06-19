@@ -64,6 +64,8 @@ const App: React.FC = () => {
           const [email, nome, curso] = item.split(":");
           return { email, nome, curso };
         });
+       
+        
       setContacts(contactsData);
     }
     // Tratar mensagens de chat
@@ -161,7 +163,7 @@ const App: React.FC = () => {
   return (
     <div className="app chat-app">
       <header className="app-header">
-        <h2>Chat UTA - {currentUser.nome}</h2>
+        <h2>Chat Seguro - {currentUser.nome}</h2>
         <button onClick={handleLogout} className="logout-button">
           Sair
         </button>

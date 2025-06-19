@@ -13,7 +13,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [course, setCourse] = useState("");
+  const [course, setCourse] = useState("LEIT");
   const [error, setError] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -57,15 +57,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             required
           />
         </div>
-        <div className="form-group">
-          <label>Curso:</label>
-          <input
-            type="text"
-            value={course}
-            onChange={(e) => setCourse(e.target.value)}
-            required
-          />
-        </div>
+        
         <button type="submit">Registrar</button>
         <button type="button" onClick={onLoginClick} className="secondary">
           Já tenho uma conta
