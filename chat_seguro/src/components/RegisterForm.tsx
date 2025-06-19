@@ -13,7 +13,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [course, setCourse] = useState("");
+  const [course, setCourse] = useState("LEIT");
   const [error, setError] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -57,7 +57,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             required
           />
         </div>
-        <div className="form-group">
+        <div className="form-group hidden">
           <label>Curso:</label>
           <input
             type="text"

@@ -38,7 +38,6 @@ const ContactsList: React.FC<ContactsListProps> = ({
             >
               <div className="contact-name">{contact.nome}</div>
               <div className="contact-email">{contact.email}</div>
-              <div className="contact-course">{contact.curso}</div>
             </div>
           ))}
       </div>

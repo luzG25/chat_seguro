@@ -9,7 +9,7 @@ import Chat from "./components/Chat";
 import "./styles.css";
 import { DiffieHelman, guardarParams } from "./services/diffieHelmanService";
 
-const WS_URL = "ws://localhost:5098"; // Altere para o endereço do seu servidor
+const WS_URL = "ws://localhost:5099"; // Altere para o endereço do seu servidor
 
 const dh = new DiffieHelman();
 
@@ -20,6 +20,15 @@ const App: React.FC = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [error, setError] = useState("");
+  const [rspDH, setRspDH] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (rspDH) {
+      handleSendMessage("RECMYDHKEY", rspDH, "" + dh.obterChavePublica());
+    }
+
+    setRspDH(null);
+  }, [rspDH]);
 
   //fazer DH com novo contacto
   useEffect(() => {
@@ -90,7 +99,14 @@ const App: React.FC = () => {
     }
     // Tratar mensagens de chat
     else if (message.tipo === "msg") {
-      if (message.msg === "GETYOURDHKEY" && message.aux1) {
+      const savedSession = localStorage.getItem("userSession");
+      if (!savedSession) return;
+      const session = JSON.parse(savedSession);
+      if (
+        message.msg === "GETYOURDHKEY" &&
+        message.aux1 &&
+        message.emissor !== session.email
+      ) {
         //gerar chave privada com contacto
         const key2 = message.aux1;
         const chavePrivada = dh.gerarChaveSecreta(Number(key2));
@@ -102,15 +118,14 @@ const App: React.FC = () => {
               message.emissor
             } (sua pub: ${key2}): ${chavePrivada}`
           );
+          //enviar minha chave
+          setRspDH(message.emissor);
         } else alert("Erro em criar chave");
-
-        //enviar minha chave
-        handleSendMessage(
-          "RECMYDHKEY",
-          message.emissor,
-          "" + dh.obterChavePublica()
-        );
-      } else if (message.msg === "RECMYDHKEY" && message.aux1) {
+      } else if (
+        message.msg === "RECMYDHKEY" &&
+        message.aux1 &&
+        message.emissor !== session.email
+      ) {
         //gerar chave privada com contacto
         const key2 = message.aux1;
         const chavePrivada = dh.gerarChaveSecreta(Number(key2));

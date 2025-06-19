@@ -5,7 +5,6 @@ interface Params {
 
 export const guardarParams = (g: number, p: number) => {
   const params = { g, p };
-  //alert(JSON.stringify(params));
   localStorage.setItem("dhparams", JSON.stringify(params));
 };
 
@@ -20,8 +19,8 @@ export class DiffieHelman {
       this.g = armazenado.g;
       this.p = armazenado.p;
     } else {
-      this.g = g ?? 5;
-      this.p = p ?? 23;
+      this.g = g ?? 2;
+      this.p = p ?? 7919;
       guardarParams(this.g, this.p);
     }
 
