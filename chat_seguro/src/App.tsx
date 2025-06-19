@@ -1,78 +1,192 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useWebSocket } from "./hooks/useWebSocket";
+import type { Message, Contact, UserSession } from "./models/types";
+import { login, register, resumeSession } from "./services/authService";
+import LoginForm from "./components/LoginForm";
+import RegisterForm from "./components/RegisterForm";
+import ContactsList from "./components/ContactsList";
+import Chat from "./components/Chat";
+import "./styles.css";
+
+const WS_URL = "ws://localhost:5099"; // Altere para o endereço do seu servidor
 
 const App: React.FC = () => {
-  const [mensagem, setMensagem] = useState("");
-  const [mensagens, setMensagens] = useState<string[]>([]);
-  const socketRef = useRef<WebSocket | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    const socket = new WebSocket("ws://localhost:8765");
-    socketRef.current = socket;
+  // Dentro do handleIncomingMessage no App.tsx
+  const handleIncomingMessage = useCallback((message: Message) => {
+    console.log("Message received:", message);
 
-    socket.onopen = () => {
-      console.log("Conectado ao WebSocket");
-    };
+    // Tratar respostas de login/registro
+    if (message.emissor === "LoginService") {
+      if (
+        message.tipo === "Login" ||
+        message.tipo === "Incricao" ||
+        message.tipo === "RetomarSessao"
+      ) {
+        if (message.token && !message.token.startsWith("00ERROR")) {
+          // Login/registro bem-sucedido
+          const userSession = {
+            email: message.destino, // O serviço envia a resposta para o email do usuário
+            nome: message.aux1 || "",
+            token: message.token,
+            deviceToken: message.token,
+          };
+          setCurrentUser(userSession);
+          setError("");
+          localStorage.setItem("userSession", JSON.stringify(userSession));
 
-    socket.onmessage = (event) => {
-      setMensagens((prev) => [...prev, event.data]);
-    };
-
-    socket.onclose = () => {
-      console.log("Conexão encerrada");
-    };
-
-    socket.onerror = (error) => {
-      console.error("Erro no WebSocket:", error);
-    };
-
-    return () => {
-      socket.close();
-    };
+          // Carregar contatos após login
+          sendMessage({
+            tipo: "GET",
+            emissor: message.destino, // email do usuário
+            destino: "ROOT",
+            msg: "GETCONTACTS",
+            token: message.token,
+          });
+        } else {
+          setError(message.token || "Erro desconhecido");
+        }
+      }
+    }
+    // Tratar resposta de GETCONTACTS
+    else if (message.tipo === "GETCONTACTS") {
+      // O servidor envia os contatos no campo msg, separados por ;
+      const contactsData = message.msg
+        .split(";")
+        .filter((item) => item.trim() !== "")
+        .map((item) => {
+          const [email, nome, curso] = item.split(":");
+          return { email, nome, curso };
+        });
+      setContacts(contactsData);
+    }
+    // Tratar mensagens de chat
+    else if (message.tipo === "msg") {
+      setMessages((prev) => [...prev, message]);
+    }
   }, []);
 
-  const enviarMensagem = () => {
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.send(mensagem);
-      setMensagem("");
+  const { sendMessage } = useWebSocket(WS_URL, handleIncomingMessage);
+
+  useEffect(() => {
+    // Tentar retomar sessão ao carregar
+    const savedSession = localStorage.getItem("userSession");
+    if (savedSession) {
+      const session = JSON.parse(savedSession);
+      sendMessage(resumeSession(session.email, session.deviceToken));
     }
+  }, [sendMessage]);
+
+  // No início do componente App
+  useEffect(() => {
+    // Verificar se há sessão salva ao carregar
+    const savedSession = localStorage.getItem("userSession");
+    if (savedSession) {
+      const session = JSON.parse(savedSession);
+      setCurrentUser(session);
+      // Solicitar contatos
+      sendMessage({
+        tipo: "GET",
+        emissor: session.email,
+        destino: "ROOT",
+        msg: "GETCONTACTS",
+        token: session.token,
+      });
+    }
+  }, [sendMessage]);
+
+  const handleSendMessage = (messageText: string, destination: string) => {
+    if (!currentUser) return;
+
+    const message: Message = {
+      tipo: "msg",
+      emissor: currentUser.email,
+      destino: destination,
+      msg: messageText,
+      token: currentUser.token,
+    };
+
+    sendMessage(message);
+    // Adiciona a mensagem localmente imediatamente para feedback rápido
+    setMessages((prev) => [
+      ...prev,
+      {
+        ...message,
+        data: new Date().toLocaleTimeString(),
+      },
+    ]);
   };
 
-  return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center p-6">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-md p-6">
-        <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">
-          Chat WebSocket
-        </h2>
+  const handleLogin = (loginMessage: Message) => {
+    sendMessage(loginMessage);
+  };
 
-        <div className="flex mb-4">
-          <input
-            type="text"
-            value={mensagem}
-            onChange={(e) => setMensagem(e.target.value)}
-            placeholder="Digite uma mensagem..."
-            className="flex-1 border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+  const handleRegister = (registerMessage: Message) => {
+    sendMessage(registerMessage);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setMessages([]);
+    setContacts([]);
+    setSelectedContact(null);
+    localStorage.removeItem("userSession");
+  };
+
+  if (!currentUser) {
+    return (
+      <div className="app auth-page">
+        {isRegistering ? (
+          <RegisterForm
+            onRegister={handleRegister}
+            onLoginClick={() => setIsRegistering(false)}
           />
-          <button
-            onClick={enviarMensagem}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-r-lg transition"
-          >
-            Enviar
-          </button>
-        </div>
+        ) : (
+          <LoginForm
+            onLogin={handleLogin}
+            onRegisterClick={() => setIsRegistering(true)}
+          />
+        )}
+        {error && <div className="global-error">{error}</div>}
+      </div>
+    );
+  }
 
-        <div className="overflow-y-auto max-h-80 border rounded-lg p-4 bg-gray-50">
-          <h4 className="text-gray-600 font-semibold mb-2">Mensagens:</h4>
-          <ul className="space-y-2">
-            {mensagens.map((msg, index) => (
-              <li
-                key={index}
-                className="bg-white p-2 rounded shadow text-gray-800"
-              >
-                {msg}
-              </li>
-            ))}
-          </ul>
-        </div>
+  return (
+    <div className="app chat-app">
+      <header className="app-header">
+        <h2>Chat UTA - {currentUser.nome}</h2>
+        <button onClick={handleLogout} className="logout-button">
+          Sair
+        </button>
+      </header>
+
+      <div className="main-content">
+        <ContactsList
+          contacts={contacts}
+          currentUser={currentUser.email}
+          onContactSelect={setSelectedContact}
+          selectedContact={selectedContact}
+        />
+
+        <Chat
+          messages={messages.filter(
+            (msg) =>
+              (msg.emissor === selectedContact?.email &&
+                msg.destino === currentUser.email) ||
+              (msg.emissor === currentUser.email &&
+                msg.destino === selectedContact?.email)
+          )}
+          currentUser={currentUser.email}
+          selectedContact={selectedContact}
+          onSendMessage={handleSendMessage}
+        />
       </div>
     </div>
   );

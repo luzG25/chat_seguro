@@ -1,5 +1,6 @@
 from websocket_server import WebsocketServer
 
+
 clientes = []
 
 # Quando um novo cliente se conecta
@@ -18,8 +19,8 @@ def mensagem_recebida(cliente, server, mensagem):
     print(f"Mensagem recebida: {mensagem}")
     # Envia para todos os clientes, exceto quem enviou
     for c in clientes:
-        if c != cliente:
-            server.send_message(c, mensagem)
+        #if c != cliente:
+        server.send_message(c, mensagem)
 
 # Cria o servidor
 server = WebsocketServer(host='0.0.0.0', port=8765)
