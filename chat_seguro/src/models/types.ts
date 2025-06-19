@@ -13,6 +13,7 @@ export interface Contact {
   email: string;
   nome: string;
   curso: string;
+  chave?: string;
 }
 
 export interface UserSession {
