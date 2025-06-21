@@ -118,6 +118,15 @@ const App: React.FC = () => {
               message.emissor
             } (sua pub: ${key2}): ${chavePrivada}`
           );
+          //guardar chave
+          setContacts((prev) =>
+            prev.map((c) =>
+              c.email === message.emissor
+                ? { ...c, chave: "" + chavePrivada }
+                : c
+            )
+          );
+
           //enviar minha chave
           setRspDH(message.emissor);
         } else alert("Erro em criar chave");
@@ -130,6 +139,14 @@ const App: React.FC = () => {
         const key2 = message.aux1;
         const chavePrivada = dh.gerarChaveSecreta(Number(key2));
         if (chavePrivada) {
+          //guardar chave
+          setContacts((prev) =>
+            prev.map((c) =>
+              c.email === message.emissor
+                ? { ...c, chave: "" + chavePrivada }
+                : c
+            )
+          );
           alert(
             `Chave privada entre eu (minha Priv: ${dh.obterMinhaChavePrivada()}) e ${
               message.emissor

@@ -1,0 +1,26 @@
+LoginServices
+    Login -> Fazer Login
+    RetomarSessao -> RetomarSessao
+    Incricao -> criarUser
+
+    >Errors "00ERROR"
+        00ERROREMAILNOTEXISTS
+        00ERRORMAILORPASSWORDINCORRECT
+        00ERRORTOKENINCORRECT
+        00ERRORNOTUTAMAIL
+        00ERRORNOTPOSSIBLECREATEUSER
+        00ERRORMAILEXISTS
+        00ERRORCARACTSINVALID -> caso algum atributo tiver com caracter que dá problema ao sistema
+
+
+GET:
+--> getMensagens
+
+--> GETNAME
+    00ERROR:NOTFOUND
+        
+
+..........................................
+Erro nos path dos ficheiros DB (.json)
+pode-se configura-los em listaEspera.java, users.java
+escritos como variavel global, e são privadas a essa classe
