@@ -14,9 +14,23 @@ Este projeto consiste em um sistema seguro de comunicação ponto-a-ponto, desen
 
 ### Requisitos
 
+- Java Development Kit 17+ Instalado (openjdk-17-jdk)
+- Node e NPM instalado (Node 20.19+ e npm 11.3+)
+- Editor preferencial Visual Studio Code
+
 ### Instalar
 
-### Executar
+1. Rodar Servidor:
+   ```
+   javac main.java
+   java main
+   ```
+2. Instalar e Rodar Frontend :
+   ```
+   cd chat_seguro
+    npm install
+    npm run dev
+   ```
 
 ## Teoria
 
